@@ -20,7 +20,7 @@ set(CALCULATOR_SOURCES
     src/calculator.ui
 )
 
-add_executable(QtAdvancedCalculator src/main.cpp ${CALCULATOR_SOURCES})
+add_executable(QtAdvancedCalculator src/main.cpp src/calculator_app.h ${CALCULATOR_SOURCES})
 target_link_libraries(QtAdvancedCalculator PRIVATE Qt${QT_MAJOR}::Widgets)
 set_target_properties(QtAdvancedCalculator PROPERTIES
     WIN32_EXECUTABLE TRUE
@@ -38,7 +38,12 @@ if(BUILD_TESTING)
     add_executable(calculator_smoke tests/calculator_smoke.cpp ${CALCULATOR_SOURCES})
     target_link_libraries(calculator_smoke PRIVATE Qt${QT_MAJOR}::Widgets)
     add_test(NAME calculator_arithmetic_smoke COMMAND calculator_smoke)
-    set_tests_properties(calculator_arithmetic_smoke PROPERTIES
+
+    add_executable(calculator_controls tests/calculator_controls.cpp src/calculator_app.h ${CALCULATOR_SOURCES})
+    target_link_libraries(calculator_controls PRIVATE Qt${QT_MAJOR}::Widgets)
+    add_test(NAME calculator_controls_and_keyboard COMMAND calculator_controls)
+
+    set_tests_properties(calculator_arithmetic_smoke calculator_controls_and_keyboard PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     )
 endif()
