@@ -1,18 +1,13 @@
-# Qt calculator (C++17 desktop project)
+# Qt calculator · C++17 desktop application
 
-A small desktop calculator built with Qt Widgets and C++17. It demonstrates signal/slot-driven arithmetic, keyboard handling, memory storage, and selected mathematical operations. It is an educational application, not a symbolic math engine or a high-precision scientific calculator.
+An educational desktop calculator built with Qt Widgets and C++17. The application demonstrates signal/slot-driven arithmetic, keyboard input, memory, selected scientific functions, and limited power-rule calculus. It is not a general symbolic mathematics engine or a high-precision scientific calculator.
 
 ## Build and run
 
-Install a C++17 compiler, CMake 3.16+ and Qt Widgets development files (Qt 5.15+ or Qt 6). For example, on Debian/Ubuntu with Qt 5:
+Install a C++17 compiler, CMake 3.16+, and Qt Widgets development files (Qt 5.15+ or Qt 6). For example, with Qt 5 on Debian/Ubuntu:
 
 ```bash
 sudo apt-get install cmake g++ qtbase5-dev
-```
-
-From a fresh checkout:
-
-```bash
 git clone https://github.com/omarsaqr12/calculator.git
 cd calculator
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -20,34 +15,26 @@ cmake --build build
 ./build/QtAdvancedCalculator
 ```
 
-On Windows, use the CMake generator and executable path for your installed compiler/Qt kit. A qmake project, [`calculator.pro`](calculator.pro), is also retained. Platform-specific builds outside the Linux CI environment have not been verified.
+On Windows and macOS, use the CMake generator and executable path associated with your Qt kit. The original [`calculator.pro`](calculator.pro) is retained for qmake. Only Ubuntu/Qt 5 builds are checked in CI; cross-platform release binaries have not been certified.
 
-## Using the application
+## Using the calculator
 
-The number buttons, `+`, `-`, `*`, `/`, and `=` are defined in the original Qt Designer UI. The application bootstrap in [`src/main.cpp`](src/main.cpp) adds the previously omitted `0`, decimal, clear-entry/all-clear, backspace, memory, and scientific-function controls by connecting them to handlers already present in the original code. The `x^y` button is deliberately **not** exposed because its existing handler does not implement exponentiation correctly.
+The UI provides digits `0–9`, four basic operators, decimal, `=`, backspace, clear entry (`CE`), and clear all (`AC`). Keyboard digits, `+`, `-`, `*`, `/`, `.`, Enter/`=`, Backspace, Delete (`CE`), and Escape (`AC`) are routed through their corresponding buttons. The display is read-only. Memory buttons (`MS`, `MR`, `MC`, `M+`, `M-`) store, recall, clear, add and subtract a value.
 
-For the running application, the number keys, four arithmetic operators, `.` and `=`/Enter, Backspace, Delete (clear entry), and Escape (clear all) are mapped to button clicks. This avoids calling an operator slot without the `sender()` it expects. The display is read-only; use buttons or the supported keys instead of typing an arbitrary expression.
+Scientific controls implement square root, percent (`x / 100`), factorial for nonnegative integer arguments through 170, sine/cosine/tangent in **degrees**, base-10 and natural logarithms, and `e^x`. Floating-point precision, overflow, and domain restrictions apply. The incomplete `x^y` handler is deliberately **not exposed**. An in-memory history is retained for debug logging, but there is no visible history browser.
 
-The original code also has handlers for square root, percent (`x/100`), factorial (nonnegative integers through 170), degree-based sine/cosine/tangent, base-10 and natural logs, `e^x`, and memory store/recall/clear/add/subtract. These are **floating-point** computations subject to rounding, overflow, and domain restrictions. The code records a bounded in-memory history for debug logging; **there is no visible history browser**.
+The `d/dx` and `integrate` buttons demonstrate only powers: enter an evaluation point or upper bound `x`, press the operation, enter exponent `n`, then `=`. The first computes the derivative of `x^n` at `x`; the second uses `x^(n+1)/(n+1)` as the integral of `t^n` from 0 to `x` where defined. The implementation rejects `n = -1` and does not parse an arbitrary mathematical expression. Other domains and boundary cases have not all been validated.
 
-The `d/dx` and `integrate` controls are limited demonstrations, **not general calculus**: enter a point or upper bound `x`, press the operation, enter an exponent `n`, then `=`. The first computes the power-rule derivative of `x^n` at that point. The second uses `x^(n+1)/(n+1)`, intended as an integral of `t^n` from 0 to the entered bound where that integral is defined; `n = -1` is rejected. It does not parse or differentiate a user-entered function.
+## Architecture and verification
 
-## Architecture and evidence
+- [`src/calculator.ui`](src/calculator.ui) defines the original window and core controls; [`src/calculator.h`](src/calculator.h) and [`src/calculator.cpp`](src/calculator.cpp) contain the original arithmetic, memory state, and numerical helpers.
+- [`src/calculator_app.h`](src/calculator_app.h) adds missing controls and a keyboard-to-button event filter shared by [`src/main.cpp`](src/main.cpp) and the expanded GUI test.
+- [`tests/calculator_smoke.cpp`](tests/calculator_smoke.cpp) asserts `1 + 2 = 3`, then `3 × 2 = 6` using original buttons.
+- [`tests/calculator_controls.cpp`](tests/calculator_controls.cpp) exercises the restored controls, button placement, memory, representative scientific functions, two power-rule examples, and actual keyboard events.
+- [GitHub Actions](.github/workflows/ci.yml) builds the program and runs both tests under Qt 5's offscreen platform. Locally, run `ctest --test-dir build --output-on-failure` after building.
 
-- [`src/calculator.ui`](src/calculator.ui) specifies the original window and core buttons.
-- [`src/calculator.h`](src/calculator.h) and [`src/calculator.cpp`](src/calculator.cpp) contain slots, numerical helpers, and calculation/memory state.
-- [`src/main.cpp`](src/main.cpp) adds missing controls and keyboard-to-button dispatch without changing the original arithmetic source or erasing its history.
-- [`CMakeLists.txt`](CMakeLists.txt) builds the application and a small headless smoke test.
-- [`tests/calculator_smoke.cpp`](tests/calculator_smoke.cpp) asserts that clicking `1 + 2 =` shows `3` and then `* 2 =` shows `6`. CI builds with Qt 5 and runs this test under Qt's offscreen platform. These assertions do **not** test every control, numerical boundary, or target operating system.
+## Known limitations and license
 
-Run the test locally after building:
+The original calculation state is stored in globals, so multiple independent calculator windows could interfere. The original `calculator::keyPressEvent` retains its sender-dependent path; the application-level event filter handles supported keys for the normal executable, but the original class itself is not completely refactored. Repeated equals, negative-number entry, operator chaining, all scientific/calculus edge cases, and platforms beyond the tested Ubuntu Qt 5 environment require further regression testing. No screenshots or release binaries have been verified, so none are represented as published artifacts.
 
-```bash
-ctest --test-dir build --output-on-failure
-```
-
-## Remaining limitations
-
-The original calculator core stores operation state in globals, so independent calculator windows could interfere. Some exceptional numerical results are rendered as `∞` or `Error`; this is not a substitute for full domain/overflow checking. Repeated equals, negative-number entry, chained operators, scientific functions, and calculus boundary cases need dedicated regression tests. The legacy `calculator::keyPressEvent` retains sender-dependent operator calls; the application-level keyboard filter handles supported keys in the normal executable, but the class itself has not been fully refactored. No screenshots, release binaries, or claims of broad platform certification are supplied.
-
-The original [MIT license](LICENSE) is unchanged. Changes in this review are on a separate branch for inspection, not merged into `main`.
+The original [MIT license](LICENSE) is unchanged.
