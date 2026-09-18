@@ -1,13 +1,14 @@
-
-#include "calculator.h"
+#include "calculator_app.h"
 
 #include <QApplication>
 
-
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    calculator w;
-    w.show();
-    return a.exec();
+    QApplication app(argc, argv);
+    calculator window;
+    setupCalculatorControls(window);
+    CalculatorKeyFilter keyFilter(window);
+    app.installEventFilter(&keyFilter);
+    window.show();
+    return app.exec();
 }
